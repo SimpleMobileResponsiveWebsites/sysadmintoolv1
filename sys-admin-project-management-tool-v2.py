@@ -40,7 +40,9 @@ with st.sidebar.form("task_form"):
     # Subtask Entry Section
     st.write("### Add Subtasks")
     subtask_title = st.text_input("Subtask Title", placeholder="Enter subtask name")
-    if st.button("Add Subtask"):
+    
+    # Replaced st.button() with st.form_submit_button()
+    if st.form_submit_button("Add Subtask"):
         if subtask_title:
             st.session_state.temp_subtasks.append({"Subtask Title": subtask_title, "Status": "Pending"})
             st.success(f"Subtask '{subtask_title}' added.")
