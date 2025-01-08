@@ -9,6 +9,9 @@ if "tasks" not in st.session_state:
 if "subtasks" not in st.session_state:
     st.session_state.subtasks = {}
 
+if "temp_subtasks" not in st.session_state:
+    st.session_state.temp_subtasks = []
+
 # App title
 st.title("IT Systems Administrator Project Management Tool")
 
@@ -34,6 +37,23 @@ with st.sidebar.form("task_form"):
     task_assigned_to = st.text_input("Assigned To", placeholder="Enter team member's name")
     task_description = st.text_area("Description", placeholder="Provide task details")
 
+    # Subtask Entry Section
+    st.write("### Add Subtasks")
+    subtask_title = st.text_input("Subtask Title", placeholder="Enter subtask name")
+    if st.button("Add Subtask"):
+        if subtask_title:
+            st.session_state.temp_subtasks.append({"Subtask Title": subtask_title, "Status": "Pending"})
+            st.success(f"Subtask '{subtask_title}' added.")
+        else:
+            st.error("Subtask Title is required.")
+
+    # Display Current Subtasks
+    if st.session_state.temp_subtasks:
+        st.write("#### Current Subtasks:")
+        for i, subtask in enumerate(st.session_state.temp_subtasks, 1):
+            st.write(f"{i}. {subtask['Subtask Title']} - Status: {subtask['Status']}")
+
+    # Submit Task
     submitted = st.form_submit_button("Add Task")
 
     if submitted:
@@ -49,8 +69,9 @@ with st.sidebar.form("task_form"):
                 "Created": datetime.now(),
             }
             st.session_state.tasks.append(new_task)
-            st.session_state.subtasks[task_title] = []
-            st.success(f"Task '{task_title}' added successfully!")
+            st.session_state.subtasks[task_title] = st.session_state.temp_subtasks
+            st.session_state.temp_subtasks = []  # Clear temporary subtasks
+            st.success(f"Task '{task_title}' added successfully with subtasks!")
         else:
             st.error("Task Title and Assigned To are required fields.")
 
@@ -80,10 +101,24 @@ if st.session_state.tasks:
         if filter_status:
             tasks_df = tasks_df[tasks_df["Status"].isin(filter_status)]
 
-    # Task Table
-    st.dataframe(
-        tasks_df.drop(columns=["Created"], errors="ignore"), use_container_width=True
-    )
+    # Task Table with Editing
+    st.subheader("Task Table (Editable)")
+
+    if not tasks_df.empty:
+        updated_tasks_df = st.data_editor(
+            tasks_df,
+            use_container_width=True,
+            hide_index=True,
+            key="editable_task_table",
+        )
+
+        # Save updates back to the session state
+        if not updated_tasks_df.equals(tasks_df):
+            for index, updated_row in updated_tasks_df.iterrows():
+                st.session_state.tasks[index] = updated_row.to_dict()
+            st.success("Task updates saved successfully!")
+    else:
+        st.info("No tasks available to display.")
 
     # Update task status
     st.subheader("Update Task Status")
